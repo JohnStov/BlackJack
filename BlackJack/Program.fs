@@ -71,10 +71,46 @@ let deal playerCount (deck : Deck) : Hand list * Deck =
         let hands = List.map2 (fun item1 item2 -> [item1 ; item2]) firstRound secondRound
         hands, deck'
 
+let calculateScore (hand : Hand) =
+    let cardScore (card : Card) = 
+        match card.value with 
+        | Ace -> Soft(1)
+        | Two -> Hard(2)
+        | Three -> Hard(3)
+        | Four -> Hard(4)
+        | Five -> Hard(5)
+        | Six -> Hard(6)
+        | Seven -> Hard(7)
+        | Eight -> Hard(8)
+        | Nine -> Hard(9)
+        | Ten | Jack | Queen | King -> Hard(10)
+
+    let addScores (left : Score) (right : Score) =
+        let innerAdd (left : Score) (right : Score) = 
+            match left, right with
+            | Soft(a), Soft(b) | Hard(a), Soft(b) | Soft(a), Hard(b) -> Soft(a + b)
+            | Hard(a), Hard(b) -> Hard(a + b)
+            | Bust(a), Soft(b) | Bust(a), Hard(b) | Bust(a), Bust(b)| Soft(a), Bust(b) | Hard(a), Bust(b) -> Bust(a + b)
+            | Blackjack, _ | _, Blackjack -> Blackjack
+        
+        let result = innerAdd left right
+        match result with 
+        | Soft(a) when a > 21 -> Bust(a) 
+        | Hard(a) when a > 21 -> Bust(a)
+        | _ -> result
+        
+    if hand.Length = 2 then
+        match hand.[0].value, hand.[1].value with
+        | Ace, Ten | Ace, Jack | Ace, Queen | Ace, King | Ten, Ace | Jack, Ace | Queen, Ace | King, Ace -> Blackjack
+        | _, _ -> addScores (cardScore hand.[0]) (cardScore hand.[1])
+    else
+        hand |> List.fold (fun acc elem -> addScores acc (cardScore elem)) (Hard(0))
+
 [<EntryPoint>]
 let main argv = 
     let deck = newDeck() |> shuffle
     for card in deck do
         printfn "%s" (renderCard card)
-    let hands, deck' = deal 3 deck
+    let hands, deck' = deal 26 deck
+    let scores = hands |> List.map (fun elem -> calculateScore elem)
     0 // return an integer exit code
