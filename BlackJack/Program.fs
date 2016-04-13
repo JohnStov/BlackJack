@@ -71,6 +71,11 @@ let deal playerCount (deck : Deck) : Hand list * Deck =
         let hands = List.map2 (fun item1 item2 -> [item1 ; item2]) firstRound secondRound
         hands, deck'
 
+let (|Face|_|) value =
+    match value with
+    | Ten | Jack | Queen | King -> Some Face
+    | _ -> None
+
 let calculateScore (hand : Hand) =
     let cardScore (card : Card) = 
         match card.value with 
@@ -83,7 +88,7 @@ let calculateScore (hand : Hand) =
         | Seven -> Hard(7)
         | Eight -> Hard(8)
         | Nine -> Hard(9)
-        | Ten | Jack | Queen | King -> Hard(10)
+        | _ -> Hard(10)
 
     let addScores (left : Score) (right : Score) =
         let innerAdd (left : Score) (right : Score) = 
@@ -101,7 +106,7 @@ let calculateScore (hand : Hand) =
         
     if hand.Length = 2 then
         match hand.[0].value, hand.[1].value with
-        | Ace, Ten | Ace, Jack | Ace, Queen | Ace, King | Ten, Ace | Jack, Ace | Queen, Ace | King, Ace -> Blackjack
+        | Ace, Face | Face, Ace -> Blackjack
         | _, _ -> addScores (cardScore hand.[0]) (cardScore hand.[1])
     else
         hand |> List.fold (fun acc elem -> addScores acc (cardScore elem)) (Hard(0))
