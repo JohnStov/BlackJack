@@ -1,5 +1,15 @@
-﻿// Learn more about F# at http://fsharp.org
-// See the 'F# Tutorial' project for more help.
+﻿type Suit = Spades | Hearts | Diamonds | Clubs
+type Face = Jack | Queen | King
+type Pip = Two | Three | Four | Five | Six | Seven | Eight | Nine | Ten
+
+type Value =
+    | Ace
+    | Face of Face
+    | Pip of Pip
+
+type Card = { value : Value; suit : Suit }
+    
+let aceOfSpades = {value = Ace; suit = Spades}
 
 [<EntryPoint>]
 let main argv = 
