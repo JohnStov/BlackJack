@@ -25,7 +25,7 @@ type Score =
     | Blackjack
     | Hard of int
     | Soft of int
-    | Stick of int
+    | Stand of int
 
 type Player = {
     name : string;
@@ -110,7 +110,7 @@ let calculateScore (hand : Hand) =
             | Hard a , Hard b -> Hard (a + b)
             | Bust a , Soft b | Bust a , Hard b | Bust a , Bust b| Soft a , Bust b | Hard a , Bust b -> Bust (a + b)
             | Blackjack , _ | _ , Blackjack -> Blackjack
-            | Stick n , _ | _ , Stick n -> Stick n
+            | Stand n , _ | _ , Stand n -> Stand n
         
         let result = innerAdd left right
         match result with 
@@ -131,7 +131,7 @@ let renderScore (score : Score) =
     | Hard n -> printfn "%d" n
     | Bust n -> printfn "Bust! (%d)" n
     | Blackjack  -> printfn "Blackjack!"
-    | Stick n  -> printfn "Stick at %d" n
+    | Stand n  -> printfn "Stand at %d" n
 
 let createGame playerCount = 
     let deck = newDeck() |> shuffle
@@ -151,12 +151,35 @@ let displayScore (player : Player) =
         renderCard card
     renderScore player.score
 
+let displayPlayerScore (game : Game) =
+    game.players.[game.player] |> displayScore
+
 let displayScores (game : Game) =
     for player in game.players do
         player |> displayScore
+
+let finished (game : Game) =
+    game.player >= game.players.Length
+
+let stand (game : Game) =
+    { game with player = (game.player + 1) }
+
+let hit (game : Game) = 
+    let hitPlayer (player : Player) (deck : Deck) =
+        let card, deck = deck |> takeTopCard
+        let newHand = card :: player.hand
+        let newScore = calculateScore newHand 
+        { player with hand = newHand; score = newScore }, deck
+    
+    let newPlayer, deck = hitPlayer game.players.[game.player] game.deck
+    let players = game.players |> List.mapi (fun index player -> if index = game.player then newPlayer else player)
+    {game with players = players; deck = deck}
+
 
 [<EntryPoint>]
 let main argv = 
     let game = createGame 3
     game |> displayScores
+    let game = game |> hit
+    game |> displayPlayerScore
     0 // return an integer exit code
