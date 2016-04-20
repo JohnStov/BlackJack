@@ -25,6 +25,19 @@ type Score =
     | Blackjack
     | Hard of int
     | Soft of int
+    | Stick of int
+
+type Player = {
+    name : string;
+    hand : Hand;
+    score : Score;
+}
+
+type Game = {
+    deck : Deck;
+    players : Player list;
+    player : int;
+}
 
 let allValues<'T> () =
     FSharpType.GetUnionCases(typeof<'T>)
@@ -45,7 +58,7 @@ let shuffle (d : Deck) =
     a |> Array.toList
 
 let renderCard (card : Card) =
-    String.Format("{0} of {1}", toString(card.value),  toString(card.suit))
+    printfn "%s of %s" (toString(card.value))  (toString(card.suit))
 
 let takeTopCard (deck : Deck) : Card * Deck =
     match deck with
@@ -93,10 +106,11 @@ let calculateScore (hand : Hand) =
     let addScores (left : Score) (right : Score) =
         let innerAdd (left : Score) (right : Score) = 
             match left, right with
-            | Soft(a), Soft(b) | Hard(a), Soft(b) | Soft(a), Hard(b) -> Soft(a + b)
-            | Hard(a), Hard(b) -> Hard(a + b)
-            | Bust(a), Soft(b) | Bust(a), Hard(b) | Bust(a), Bust(b)| Soft(a), Bust(b) | Hard(a), Bust(b) -> Bust(a + b)
-            | Blackjack, _ | _, Blackjack -> Blackjack
+            | Soft a , Soft b | Hard a , Soft b | Soft a , Hard b -> Soft (a + b)
+            | Hard a , Hard b -> Hard (a + b)
+            | Bust a , Soft b | Bust a , Hard b | Bust a , Bust b| Soft a , Bust b | Hard a , Bust b -> Bust (a + b)
+            | Blackjack , _ | _ , Blackjack -> Blackjack
+            | Stick n , _ | _ , Stick n -> Stick n
         
         let result = innerAdd left right
         match result with 
@@ -111,11 +125,38 @@ let calculateScore (hand : Hand) =
     else
         hand |> List.fold (fun acc elem -> addScores acc (cardScore elem)) (Hard(0))
 
+let renderScore (score : Score) =
+    match score with
+    | Soft n -> printfn "%d or %d" n (n + 10) 
+    | Hard n -> printfn "%d" n
+    | Bust n -> printfn "Bust! (%d)" n
+    | Blackjack  -> printfn "Blackjack!"
+    | Stick n  -> printfn "Stick at %d" n
+
+let createGame playerCount = 
+    let deck = newDeck() |> shuffle
+    let hands, deck = deal playerCount deck
+    let scores = hands |> List.map (fun hand -> calculateScore hand)
+    let players = [for playerNum in [0 .. (playerCount - 1)] do 
+                        yield {
+                            hand = hands.[playerNum]; 
+                            score = scores.[playerNum]; 
+                            name = if playerNum = (playerCount - 1) then "Dealer" else (String.Format ("Player {0}", (playerNum + 1)))
+                        }]
+    { deck = deck; players = players; player = 0 }
+
+let displayScore (player : Player) =
+    printfn "%s" player.name
+    for card in player.hand do
+        renderCard card
+    renderScore player.score
+
+let displayScores (game : Game) =
+    for player in game.players do
+        player |> displayScore
+
 [<EntryPoint>]
 let main argv = 
-    let deck = newDeck() |> shuffle
-    for card in deck do
-        printfn "%s" (renderCard card)
-    let hands, deck' = deal 26 deck
-    let scores = hands |> List.map (fun elem -> calculateScore elem)
+    let game = createGame 3
+    game |> displayScores
     0 // return an integer exit code
