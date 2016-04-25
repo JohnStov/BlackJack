@@ -172,14 +172,33 @@ let hit (game : Game) =
         { player with hand = newHand; score = newScore }, deck
     
     let newPlayer, deck = hitPlayer game.players.[game.player] game.deck
+    let nextPlayer = match newPlayer.score with
+                     | Bust n -> (game.player + 1)
+                     | _ -> game.player
     let players = game.players |> List.mapi (fun index player -> if index = game.player then newPlayer else player)
-    {game with players = players; deck = deck}
+    { game with players = players; deck = deck; player = nextPlayer }
 
+let playTurns (game : Game) = 
+    let rec playTurn (game : Game) =
+        if game |> finished 
+        then 
+            game
+        else
+           game |> displayPlayerScore
+           printfn "(S)tand or (H)it?"
+           let move = Console.ReadLine()
+           match move with
+           | "h" | "H" -> 
+                game |> hit |> playTurn
+           | "s" | "S" -> 
+                game |> stand |> playTurn
+           | _ -> game |> playTurn
+    game |> playTurn 
 
 [<EntryPoint>]
 let main argv = 
     let game = createGame 3
     game |> displayScores
-    let game = game |> hit
-    game |> displayPlayerScore
+    let game = game |> playTurns
+    game |> displayScores
     0 // return an integer exit code
