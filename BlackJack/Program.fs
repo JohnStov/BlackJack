@@ -179,21 +179,45 @@ let hit (game : Game) =
     { game with players = players; deck = deck; player = nextPlayer }
 
 let playTurns (game : Game) = 
+    let isDealerTurn game = 
+        game.players.[game.player].name = "Dealer"
+        
+    let dealerPlay game =
+        match game.players.[game.player].score with
+        | Bust n
+        | Stand n
+            -> game |> stand
+        | Hard n
+        | Soft n
+            -> if n < 17 then game |> hit else game |> stand
+        | BlackJack -> game |> stand
+        
+    
+    let playDealerTurn game = 
+        game |> displayPlayerScore
+        game |> dealerPlay
+    
+    let playPlayerTurn game = 
+        printfn "(S)tand or (H)it?"
+        let move = Console.ReadLine()
+        match move with
+        | "h" | "H" -> 
+            game |> hit
+        | "s" | "S" -> 
+            game |> stand
+        | _ -> game
+    
     let rec playTurn (game : Game) =
-        if game |> finished 
-        then 
+        if game |> finished then 
             game
         else
-           game |> displayPlayerScore
-           printfn "(S)tand or (H)it?"
-           let move = Console.ReadLine()
-           match move with
-           | "h" | "H" -> 
-                game |> hit |> playTurn
-           | "s" | "S" -> 
-                game |> stand |> playTurn
-           | _ -> game |> playTurn
-    game |> playTurn 
+            game |> displayPlayerScore
+            if game |> isDealerTurn then
+                game |> playDealerTurn  |> playTurn
+            else
+                game |> playPlayerTurn  |> playTurn
+
+    game |> playTurn
 
 [<EntryPoint>]
 let main argv = 
