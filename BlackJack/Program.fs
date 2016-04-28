@@ -127,7 +127,7 @@ let calculateScore (hand : Hand) =
 
 let renderScore (score : Score) =
     match score with
-    | Soft n -> printfn "%d or %d" n (n + 10) 
+    | Soft n -> if n <= 11 then printfn "%d or %d" n (n + 10) else printfn "%d" n
     | Hard n -> printfn "%d" n
     | Bust n -> printfn "Bust! (%d)" n
     | Blackjack  -> printfn "Blackjack!"
@@ -173,18 +173,18 @@ let hit (game : Game) =
     
     let newPlayer, deck = hitPlayer game.players.[game.player] game.deck
     let nextPlayer = match newPlayer.score with
-                     | Bust n -> (game.player + 1)
+                     | Bust n -> game |> displayPlayerScore; (game.player + 1)
                      | _ -> game.player
     let players = game.players |> List.mapi (fun index player -> if index = game.player then newPlayer else player)
     { game with players = players; deck = deck; player = nextPlayer }
 
 let playTurns (game : Game) = 
     let rec playTurn (game : Game) =
+        game |> displayPlayerScore
         if game |> finished 
         then 
             game
         else
-           game |> displayPlayerScore
            printfn "(S)tand or (H)it?"
            let move = Console.ReadLine()
            match move with
